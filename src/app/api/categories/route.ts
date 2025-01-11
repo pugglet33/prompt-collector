@@ -14,10 +14,18 @@ export async function GET() {
     });
     console.log('Found categories:', categories);
     
+    // Map categories to a simpler format and ensure createdAt is handled properly
+    const mappedCategories = categories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      promptCount: cat._count.prompts,
+      createdAt: cat.createdAt.toISOString()
+    }));
+    
     // Only return categories that have prompts or were recently created
-    const activeCategories = categories.filter(cat => 
-      cat._count.prompts > 0 || 
-      new Date(cat.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000 // Created in last 24 hours
+    const activeCategories = mappedCategories.filter(cat => 
+      cat.promptCount > 0 || 
+      (new Date(cat.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000) // Created in last 24 hours
     );
     
     console.log('Active categories:', activeCategories);

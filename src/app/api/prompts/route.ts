@@ -20,7 +20,10 @@ export async function POST(request: Request) {
       // Try to create new category
       try {
         categoryRecord = await prisma.category.create({
-          data: { name: newCategory }
+          data: { 
+            name: newCategory,
+            createdAt: new Date() // Explicitly set creation date
+          }
         });
         console.log('Created new category:', categoryRecord);
       } catch (error: any) {
@@ -61,6 +64,7 @@ export async function POST(request: Request) {
           prompt,
           negativePrompt: negativePrompt || null,
           categoryId: categoryRecord.id,
+          createdAt: new Date() // Explicitly set creation date
         },
         include: {
           category: true
@@ -92,7 +96,17 @@ export async function GET() {
       orderBy: { createdAt: 'desc' }
     });
     
-    return NextResponse.json(prompts);
+    // Map prompts to ensure dates are properly serialized
+    const mappedPrompts = prompts.map(prompt => ({
+      ...prompt,
+      createdAt: prompt.createdAt.toISOString(),
+      category: {
+        ...prompt.category,
+        createdAt: prompt.category.createdAt.toISOString()
+      }
+    }));
+    
+    return NextResponse.json(mappedPrompts);
   } catch (error) {
     console.error('Failed to fetch prompts:', error);
     return NextResponse.json(

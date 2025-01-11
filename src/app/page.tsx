@@ -22,7 +22,13 @@ export default function Home() {
       const data = await res.json();
       console.log('Fetched categories:', data);
       if (!res.ok) throw new Error(data.error || 'Failed to fetch categories');
-      setCategories(data.map((cat: any) => cat.name));
+      
+      // Sort categories by name
+      const sortedCategories = data
+        .map((cat: any) => cat.name)
+        .sort((a: string, b: string) => a.localeCompare(b));
+      
+      setCategories(sortedCategories);
     } catch (error) {
       console.error('Failed to fetch categories:', error);
       setError('Failed to load categories');
