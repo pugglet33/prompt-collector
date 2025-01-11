@@ -13,6 +13,7 @@ export default function Home() {
 
   const [categories, setCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Fetch categories when component mounts
@@ -21,12 +22,17 @@ export default function Home() {
       .then(data => {
         setCategories(data.map((cat: any) => cat.name));
       })
-      .catch(console.error);
+      .catch(error => {
+        console.error('Failed to fetch categories:', error);
+        setError('Failed to load categories');
+      });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
+
     try {
       const response = await fetch('/api/prompts', {
         method: 'POST',
@@ -34,14 +40,19 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.name || 'none',
+          name: formData.name,
           prompt: formData.prompt,
           negativePrompt: formData.negativePrompt,
-          category: formData.category === 'new' ? formData.newCategory : formData.category,
+          category: formData.category,
+          newCategory: formData.category === 'new' ? formData.newCategory : undefined,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to save prompt');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save prompt');
+      }
       
       // Reset form after successful submission
       setFormData({
@@ -51,72 +62,78 @@ export default function Home() {
         category: '',
         newCategory: '',
       });
-      
-      alert('Prompt saved successfully!');
     } catch (error) {
-      console.error('Error saving prompt:', error);
-      alert('Failed to save prompt. Please try again.');
+      console.error('Failed to save prompt:', error);
+      setError(error instanceof Error ? error.message : 'Failed to save prompt');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="space-y-8">
-      <header className="text-center">
-        <h1 className="text-4xl font-bold mb-2">Art Prompt Collector</h1>
-        <p className="text-green-400">Collect and organize your AI art prompts</p>
-      </header>
-
-      <form onSubmit={handleSubmit} className="card space-y-4">
+    <main className="min-h-screen bg-black p-8">
+      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-6">
+        {error && (
+          <div className="text-red-500 bg-red-100/10 p-4 rounded-lg">
+            {error}
+          </div>
+        )}
+        
         <div>
-          <label htmlFor="name" className="block mb-2">Prompt Name (Optional)</label>
+          <label htmlFor="name" className="block text-green-500 mb-2">
+            Prompt Name (Optional)
+          </label>
           <input
-            type="text"
             id="name"
-            className="input-field"
+            type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="Enter a name for your prompt"
+            className="w-full bg-black border border-green-500 rounded p-2 text-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </div>
 
         <div>
-          <label htmlFor="prompt" className="block mb-2">Prompt *</label>
+          <label htmlFor="prompt" className="block text-green-500 mb-2">
+            Prompt *
+          </label>
           <textarea
             id="prompt"
-            className="input-field min-h-[100px]"
+            required
             value={formData.prompt}
             onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
-            placeholder="Enter your prompt here"
-            required
+            className="w-full bg-black border border-green-500 rounded p-2 text-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[100px]"
           />
         </div>
 
         <div>
-          <label htmlFor="negativePrompt" className="block mb-2">Negative Prompt (Optional)</label>
+          <label htmlFor="negativePrompt" className="block text-green-500 mb-2">
+            Negative Prompt (Optional)
+          </label>
           <textarea
             id="negativePrompt"
-            className="input-field"
             value={formData.negativePrompt}
             onChange={(e) => setFormData({ ...formData, negativePrompt: e.target.value })}
-            placeholder="Enter things to avoid in the generation"
+            className="w-full bg-black border border-green-500 rounded p-2 text-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[100px]"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="category" className="block mb-2">Category *</label>
+            <label htmlFor="category" className="block text-green-500 mb-2">
+              Category *
+            </label>
             <select
               id="category"
-              className="input-field"
+              required
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              required
+              className="w-full bg-black border border-green-500 rounded p-2 text-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="">Select a category</option>
               {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
               ))}
               <option value="new">+ Add new category</option>
             </select>
@@ -124,28 +141,31 @@ export default function Home() {
 
           {formData.category === 'new' && (
             <div>
-              <label htmlFor="newCategory" className="block mb-2">New Category *</label>
+              <label htmlFor="newCategory" className="block text-green-500 mb-2">
+                New Category *
+              </label>
               <input
-                type="text"
                 id="newCategory"
-                className="input-field"
+                type="text"
+                required
                 value={formData.newCategory}
                 onChange={(e) => setFormData({ ...formData, newCategory: e.target.value })}
-                placeholder="Enter new category name"
-                required
+                className="w-full bg-black border border-green-500 rounded p-2 text-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
           )}
         </div>
 
-        <button 
-          type="submit" 
-          className="btn-primary w-full"
+        <button
+          type="submit"
           disabled={isLoading}
+          className={`w-full bg-green-500 text-black font-bold py-2 px-4 rounded ${
+            isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-400'
+          }`}
         >
           {isLoading ? 'Saving...' : 'Save Prompt'}
         </button>
       </form>
-    </div>
+    </main>
   );
 }

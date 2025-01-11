@@ -6,43 +6,66 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { name, prompt, negativePrompt, category, newCategory } = body;
 
+    if (!prompt) {
+      return NextResponse.json(
+        { error: 'Prompt is required' },
+        { status: 400 }
+      );
+    }
+
     // Handle category creation/selection
     let categoryRecord = await prisma.category.findUnique({
       where: { name: newCategory || category }
     });
 
     if (!categoryRecord && newCategory) {
-      categoryRecord = await prisma.category.create({
-        data: { name: newCategory }
-      });
+      try {
+        categoryRecord = await prisma.category.create({
+          data: { name: newCategory }
+        });
+      } catch (error) {
+        console.error('Failed to create category:', error);
+        return NextResponse.json(
+          { error: 'Failed to create new category' },
+          { status: 500 }
+        );
+      }
     }
 
     if (!categoryRecord) {
       return NextResponse.json(
-        { error: 'Category not found' },
+        { error: 'Category not found and no new category provided' },
         { status: 400 }
       );
     }
 
     // Create prompt
-    const promptRecord = await prisma.prompt.create({
-      data: {
-        name: name || 'none',
-        prompt,
-        negativePrompt,
-        categoryId: categoryRecord.id,
-      },
-      include: {
-        category: true
-      }
-    });
+    try {
+      const promptRecord = await prisma.prompt.create({
+        data: {
+          name: name || 'none',
+          prompt,
+          negativePrompt: negativePrompt || null,
+          categoryId: categoryRecord.id,
+        },
+        include: {
+          category: true
+        }
+      });
 
-    return NextResponse.json(promptRecord);
+      return NextResponse.json(promptRecord);
+    } catch (error) {
+      console.error('Failed to create prompt:', error);
+      return NextResponse.json(
+        { error: 'Failed to save prompt to database' },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    console.error('Failed to create prompt:', error);
+    console.error('Failed to process request:', error);
     return NextResponse.json(
-      { error: 'Failed to create prompt' },
-      { status: 500 }
+      { error: 'Invalid request data' },
+      { status: 400 }
     );
   }
 }
