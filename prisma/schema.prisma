@@ -1,0 +1,26 @@
+// This is your Prisma schema file
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  prompts   Prompt[]
+}
+
+model Prompt {
+  id            String   @id @default(cuid())
+  name          String?  @default("none")
+  prompt        String
+  negativePrompt String?
+  category      Category @relation(fields: [categoryId], references: [id])
+  categoryId    String
+  createdAt     DateTime @default(now())
+}

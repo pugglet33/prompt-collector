@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "@prisma/client": "^6.2.1",
+    "prisma": "^6.2.1"
+  },
+  "dependencies": {
+    "@vercel/postgres": "^0.10.0"
+  }
+}
