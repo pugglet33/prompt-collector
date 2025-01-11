@@ -14,22 +14,36 @@ export async function POST(request: Request) {
     }
 
     // Handle category creation/selection
-    let categoryRecord = await prisma.category.findUnique({
-      where: { name: newCategory || category }
-    });
-
-    if (!categoryRecord && newCategory) {
+    let categoryRecord;
+    
+    if (newCategory) {
+      // Try to create new category
       try {
         categoryRecord = await prisma.category.create({
           data: { name: newCategory }
         });
-      } catch (error) {
-        console.error('Failed to create category:', error);
-        return NextResponse.json(
-          { error: 'Failed to create new category' },
-          { status: 500 }
-        );
+        console.log('Created new category:', categoryRecord);
+      } catch (error: any) {
+        // If category already exists, try to use it
+        if (error.code === 'P2002') {
+          categoryRecord = await prisma.category.findUnique({
+            where: { name: newCategory }
+          });
+          console.log('Using existing category:', categoryRecord);
+        } else {
+          console.error('Failed to create category:', error);
+          return NextResponse.json(
+            { error: 'Failed to create new category' },
+            { status: 500 }
+          );
+        }
       }
+    } else if (category) {
+      // Use existing category
+      categoryRecord = await prisma.category.findUnique({
+        where: { name: category }
+      });
+      console.log('Using selected category:', categoryRecord);
     }
 
     if (!categoryRecord) {
@@ -53,6 +67,7 @@ export async function POST(request: Request) {
         }
       });
 
+      console.log('Created prompt:', promptRecord);
       return NextResponse.json(promptRecord);
     } catch (error) {
       console.error('Failed to create prompt:', error);
