@@ -15,17 +15,21 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/categories');
+      const data = await res.json();
+      console.log('Fetched categories:', data);
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch categories');
+      setCategories(data.map((cat: any) => cat.name));
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+      setError('Failed to load categories');
+    }
+  };
+
   useEffect(() => {
-    // Fetch categories when component mounts
-    fetch('/api/categories')
-      .then(res => res.json())
-      .then(data => {
-        setCategories(data.map((cat: any) => cat.name));
-      })
-      .catch(error => {
-        console.error('Failed to fetch categories:', error);
-        setError('Failed to load categories');
-      });
+    fetchCategories();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,7 +58,7 @@ export default function Home() {
         throw new Error(data.error || 'Failed to save prompt');
       }
       
-      // Reset form after successful submission
+      // Reset form and refresh categories
       setFormData({
         name: '',
         prompt: '',
@@ -62,6 +66,9 @@ export default function Home() {
         category: '',
         newCategory: '',
       });
+      
+      // Fetch updated categories after successful submission
+      await fetchCategories();
     } catch (error) {
       console.error('Failed to save prompt:', error);
       setError(error instanceof Error ? error.message : 'Failed to save prompt');
