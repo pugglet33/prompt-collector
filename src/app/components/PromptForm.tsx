@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface PromptFormProps {
   initialCategories: string[];
 }
 
 export default function PromptForm({ initialCategories }: PromptFormProps) {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
     prompt: '',
@@ -59,13 +61,8 @@ export default function PromptForm({ initialCategories }: PromptFormProps) {
       // Show success message
       setSuccessMessage('Prompt saved successfully!');
       
-      // Fetch updated categories
-      const categoriesRes = await fetch('/api/categories');
-      const categoriesData = await categoriesRes.json();
-      const sortedCategories = categoriesData
-        .map((cat: any) => cat.name)
-        .sort((a: string, b: string) => a.localeCompare(b));
-      setCategories(sortedCategories);
+      // Force a page refresh to get updated categories
+      router.refresh();
     } catch (error) {
       console.error('Failed to save prompt:', error);
       setError(error instanceof Error ? error.message : 'Failed to save prompt');

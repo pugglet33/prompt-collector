@@ -1,23 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
 import PromptForm from './components/PromptForm';
 
-export const dynamic = 'force-dynamic';
+// This ensures the page is dynamically rendered
+export const fetchCache = 'force-no-store';
 export const revalidate = 0;
 
-export default async function Home() {
-  // Fetch categories server-side
+async function getCategories() {
+  'use server';
   const categories = await prisma.category.findMany({
     orderBy: { name: 'asc' },
   });
-  
-  // Map and sort categories
-  const sortedCategories = categories
-    .map(cat => cat.name)
-    .sort((a, b) => a.localeCompare(b));
+  return categories.map(cat => cat.name).sort((a, b) => a.localeCompare(b));
+}
+
+export default async function Home() {
+  const sortedCategories = await getCategories();
 
   return (
     <main className="min-h-screen bg-black p-8">
@@ -40,7 +41,9 @@ export default async function Home() {
           </p>
         </div>
 
-        <PromptForm initialCategories={sortedCategories} />
+        <Suspense fallback={<div>Loading...</div>}>
+          <PromptForm initialCategories={sortedCategories} />
+        </Suspense>
       </div>
     </main>
   );
