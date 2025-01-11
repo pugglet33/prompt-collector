@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCategories } from '../actions/categories';
 
 interface PromptFormProps {
   initialCategories: string[];
@@ -21,6 +22,11 @@ export default function PromptForm({ initialCategories }: PromptFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Update categories when initialCategories changes
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +69,10 @@ export default function PromptForm({ initialCategories }: PromptFormProps) {
       
       // Force a page refresh to get updated categories
       router.refresh();
+      
+      // Update categories
+      const updatedCategories = await getCategories();
+      setCategories(updatedCategories);
     } catch (error) {
       console.error('Failed to save prompt:', error);
       setError(error instanceof Error ? error.message : 'Failed to save prompt');
