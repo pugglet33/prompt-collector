@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const [formData, setFormData] = useState({
@@ -11,14 +11,54 @@ export default function Home() {
     newCategory: '',
   });
 
-  const [categories, setCategories] = useState([
-    'Character', 'Landscape', 'Abstract', 'Sci-fi', 'Fantasy'
-  ]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Fetch categories when component mounts
+    fetch('/api/categories')
+      .then(res => res.json())
+      .then(data => {
+        setCategories(data.map((cat: any) => cat.name));
+      })
+      .catch(console.error);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement API call to save prompt
-    console.log(formData);
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/prompts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name || 'none',
+          prompt: formData.prompt,
+          negativePrompt: formData.negativePrompt,
+          category: formData.category === 'new' ? formData.newCategory : formData.category,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save prompt');
+      
+      // Reset form after successful submission
+      setFormData({
+        name: '',
+        prompt: '',
+        negativePrompt: '',
+        category: '',
+        newCategory: '',
+      });
+      
+      alert('Prompt saved successfully!');
+    } catch (error) {
+      console.error('Error saving prompt:', error);
+      alert('Failed to save prompt. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -98,8 +138,12 @@ export default function Home() {
           )}
         </div>
 
-        <button type="submit" className="btn-primary w-full">
-          Save Prompt
+        <button 
+          type="submit" 
+          className="btn-primary w-full"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Saving...' : 'Save Prompt'}
         </button>
       </form>
     </div>
