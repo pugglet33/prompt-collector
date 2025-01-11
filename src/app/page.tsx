@@ -1,16 +1,20 @@
-'use client';
-
 import Image from 'next/image';
 import { Suspense } from 'react';
 import PromptForm from './components/PromptForm';
-import { getCategories } from './actions/categories';
+import { prisma } from '@/lib/prisma';
 
-// This ensures the page is dynamically rendered
-export const fetchCache = 'force-no-store';
-export const revalidate = 0;
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  const sortedCategories = await getCategories();
+  // Fetch categories server-side
+  const categories = await prisma.category.findMany({
+    orderBy: { name: 'asc' },
+  });
+  
+  // Map and sort categories
+  const sortedCategories = categories
+    .map(cat => cat.name)
+    .sort((a, b) => a.localeCompare(b));
 
   return (
     <main className="min-h-screen bg-black p-8">

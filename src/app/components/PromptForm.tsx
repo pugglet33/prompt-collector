@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCategories } from '../actions/categories';
 
 interface PromptFormProps {
   initialCategories: string[];
@@ -69,10 +68,12 @@ export default function PromptForm({ initialCategories }: PromptFormProps) {
       
       // Force a page refresh to get updated categories
       router.refresh();
-      
-      // Update categories
-      const updatedCategories = await getCategories();
-      setCategories(updatedCategories);
+
+      // If we added a new category, add it to the list immediately
+      if (formData.category === 'new' && formData.newCategory) {
+        const newCategories = [...categories, formData.newCategory].sort();
+        setCategories(newCategories);
+      }
     } catch (error) {
       console.error('Failed to save prompt:', error);
       setError(error instanceof Error ? error.message : 'Failed to save prompt');
