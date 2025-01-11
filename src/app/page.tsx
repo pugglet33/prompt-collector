@@ -15,6 +15,7 @@ export default function Home() {
   const [categories, setCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fetchCategories = async () => {
     try {
@@ -43,6 +44,7 @@ export default function Home() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       const response = await fetch('/api/prompts', {
@@ -65,7 +67,7 @@ export default function Home() {
         throw new Error(data.error || 'Failed to save prompt');
       }
       
-      // Reset form and refresh categories
+      // Reset form
       setFormData({
         name: '',
         prompt: '',
@@ -74,7 +76,10 @@ export default function Home() {
         newCategory: '',
       });
       
-      // Fetch updated categories after successful submission
+      // Show success message
+      setSuccessMessage('Prompt saved successfully!');
+      
+      // Fetch updated categories
       await fetchCategories();
     } catch (error) {
       console.error('Failed to save prompt:', error);
@@ -109,6 +114,12 @@ export default function Home() {
           {error && (
             <div className="text-red-500 bg-red-100/10 p-4 rounded-lg">
               {error}
+            </div>
+          )}
+          
+          {successMessage && (
+            <div className="text-green-500 bg-green-100/10 p-4 rounded-lg">
+              {successMessage}
             </div>
           )}
           
